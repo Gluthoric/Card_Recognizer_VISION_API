@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const API_KEY = 'AIzaSyBHkqAsUNFkEyJH2xTYT_GULc9JmMOeFUo';
+const API_KEY = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
 const API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
 
 export async function recognizeCardName(imageFile: File): Promise<string | null> {
   try {
     const base64Image = await fileToBase64(imageFile);
-    
+
     const requestBody = {
       requests: [
         {
@@ -25,7 +25,7 @@ export async function recognizeCardName(imageFile: File): Promise<string | null>
 
     const response = await axios.post(API_URL, requestBody);
     const textAnnotations = response.data.responses[0]?.textAnnotations;
-    
+
     if (textAnnotations && textAnnotations.length > 0) {
       // Extract the card name from the recognized text
       // This is a simple example and might need to be improved based on the card layout
