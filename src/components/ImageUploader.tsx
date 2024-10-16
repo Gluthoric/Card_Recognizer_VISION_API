@@ -1,10 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { v4 as uuidv4 } from 'uuid';
 import { UploadedImage } from '../types';
+import { getSets } from '../services/scryfallApi';
 
 interface ImageUploaderProps {
   onUpload: (images: UploadedImage[]) => void;
+}
+
+interface Set {
+  code: string;
+  name: string;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
@@ -19,6 +25,26 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
   const [enableKeybinds, setEnableKeybinds] = useState(true);
   const [comment, setComment] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [sets, setSets] = useState<Set[]>([]);
+  const [filteredSets, setFilteredSets] = useState<Set[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchSets = async () => {
+      const fetchedSets = await getSets();
+      setSets(fetchedSets);
+      setFilteredSets(fetchedSets);
+    };
+    fetchSets();
+  }, []);
+
+  useEffect(() => {
+    const results = sets.filter(set =>
+      set.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      set.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredSets(results);
+  }, [searchTerm, sets]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newImages: UploadedImage[] = acceptedFiles.map((file) => ({
@@ -32,7 +58,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
     onUpload(newImages);
   }, [onUpload]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/jpeg': ['.jpg', '.jpeg'],
@@ -62,13 +88,24 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload }) => {
       </div>
       <div className="mb-4">
         <label className="block mb-2">Select Expansion (Optional)</label>
+        <input
+          type="text"
+          placeholder="Search for a set..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 bg-gray-700 rounded text-white mb-2"
+        />
         <select
           value={expansion}
           onChange={(e) => setExpansion(e.target.value)}
           className="w-full p-2 bg-gray-700 rounded text-white"
         >
           <option value="">Select expansion</option>
-          {/* Add more expansion options here */}
+          {filteredSets.map((set) => (
+            <option key={set.code} value={set.code}>
+              {set.name} ({set.code})
+            </option>
+          ))}
         </select>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-4">

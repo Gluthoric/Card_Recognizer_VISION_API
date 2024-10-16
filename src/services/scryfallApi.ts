@@ -17,7 +17,7 @@ export async function getCardVersions(cardName: string): Promise<CardVersion[]> 
         q: query,
         unique: 'prints',
         order: 'released',
-        dir: 'desc'
+        dir: 'desc',
       },
     });
 
@@ -42,7 +42,7 @@ export async function getCardVersions(cardName: string): Promise<CardVersion[]> 
 }
 
 export const getCardInfo = async (scryfallId: string): Promise<MtgCard | null> => {
-  const response = await fetch(`https://api.scryfall.com/cards/${scryfallId}`);
+  const response = await fetch(`${API_URL}/cards/${scryfallId}`);
   const data = await response.json();
 
   if (response.ok) {
@@ -64,3 +64,16 @@ export const getCardInfo = async (scryfallId: string): Promise<MtgCard | null> =
   }
   return null;
 };
+
+export async function getSets(): Promise<{ code: string; name: string }[]> {
+  try {
+    const response = await axios.get(`${API_URL}/sets`);
+    return response.data.data.map((set: any) => ({
+      code: set.code,
+      name: set.name,
+    }));
+  } catch (error) {
+    console.error('Error fetching sets:', error instanceof Error ? error.message : 'Unknown error');
+    return [];
+  }
+}

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CardUploader from './CardUploader';
 import { RecognizedCard } from '../types';
 import { XIcon } from 'lucide-react';
+import { getSets } from '../services/scryfallApi'; // Import getSets function
 
 interface UploaderModalProps {
   isOpen: boolean;
@@ -16,11 +17,21 @@ const UploaderModal: React.FC<UploaderModalProps> = ({
   onClose,
   onUpload,
   onCardSelect,
-  preSelectedSet
+  preSelectedSet,
 }) => {
   const [uploadedCards, setUploadedCards] = useState<RecognizedCard[]>([]);
+  const [sets, setSets] = useState<{ code: string; name: string }[]>([]); // Store fetched sets
+  const [selectedSet, setSelectedSet] = useState<string>(preSelectedSet || '');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      const fetchSets = async () => {
+        const setsData = await getSets();
+        setSets(setsData);
+      };
+      fetchSets();
+    }
+  }, [isOpen]); // Fetch sets only when modal opens
 
   const handleUpload = (cards: RecognizedCard[]) => {
     setUploadedCards(cards);
@@ -30,6 +41,8 @@ const UploaderModal: React.FC<UploaderModalProps> = ({
     onUpload(uploadedCards);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex">
@@ -54,9 +67,7 @@ const UploaderModal: React.FC<UploaderModalProps> = ({
           <div className="space-y-4">
             <div>
               <label className="block mb-2">Select Game (Required)</label>
-              <select
-                className="w-full p-2 bg-gray-800 rounded text-white"
-              >
+              <select className="w-full p-2 bg-gray-800 rounded text-white">
                 <option value="Magic: The Gathering">Magic: The Gathering</option>
               </select>
             </div>
@@ -64,41 +75,41 @@ const UploaderModal: React.FC<UploaderModalProps> = ({
               <label className="block mb-2">Select Expansion (Optional)</label>
               <select
                 className="w-full p-2 bg-gray-800 rounded text-white"
+                value={selectedSet}
+                onChange={(e) => setSelectedSet(e.target.value)}
               >
                 <option value="">Select expansion</option>
-                {/* Add more expansion options here */}
+                {sets.map((set) => (
+                  <option key={set.code} value={set.code}>
+                    {set.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block mb-2">Condition</label>
-                <select
-                  className="w-full p-2 bg-gray-800 rounded text-white"
-                >
+                <select className="w-full p-2 bg-gray-800 rounded text-white">
                   <option value="NM">NM</option>
                   {/* Add more condition options here */}
                 </select>
               </div>
               <div>
                 <label className="block mb-2">Language</label>
-                <select
-                  className="w-full p-2 bg-gray-800 rounded text-white"
-                >
+                <select className="w-full p-2 bg-gray-800 rounded text-white">
                   <option value="English">English</option>
                   {/* Add more language options here */}
                 </select>
               </div>
               <div>
                 <label className="block mb-2">Printing Type</label>
-                <select
-                  className="w-full p-2 bg-gray-800 rounded text-white"
-                >
+                <select className="w-full p-2 bg-gray-800 rounded text-white">
                   <option value="Normal">Normal</option>
                   {/* Add more printing type options here */}
                 </select>
               </div>
             </div>
-            <button 
+            <button
               className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors duration-150 ease-in-out"
               onClick={handleConfirm}
               disabled={uploadedCards.length === 0}
