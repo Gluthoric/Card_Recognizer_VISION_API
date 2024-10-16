@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MtgCard } from '../types';
+import { useFetchSets } from '../utils/commonHooks';
 
 interface CardListProps {
   cards: MtgCard[];
@@ -10,6 +11,12 @@ interface CardListProps {
   onManualInput: () => void;
 }
 
+interface Set {
+  id: string;
+  name: string;
+  code: string;
+}
+
 const CardList: React.FC<CardListProps> = ({
   cards,
   onSelectCard,
@@ -18,6 +25,12 @@ const CardList: React.FC<CardListProps> = ({
   unsuccessfulCards,
   onManualInput
 }) => {
+  const { sets, fetchSets, loading, error } = useFetchSets<Set>();
+
+  useEffect(() => {
+    fetchSets();
+  }, [fetchSets]);
+
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow">
       <h2 className="text-xl font-bold mb-4 text-white">Card List</h2>
@@ -44,6 +57,21 @@ const CardList: React.FC<CardListProps> = ({
               onClick={onManualInput}
             >
               {cardName} (Unrecognized)
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3 className="text-lg font-bold mt-6 mb-2 text-white">Available Sets</h3>
+      {loading ? (
+        <p className="text-gray-400">Loading sets...</p>
+      ) : error ? (
+        <p className="text-red-500">{error}</p>
+      ) : (
+        <ul className="space-y-1 text-sm">
+          {sets.map((set) => (
+            <li key={set.id} className="text-gray-300">
+              {set.name} ({set.code})
             </li>
           ))}
         </ul>

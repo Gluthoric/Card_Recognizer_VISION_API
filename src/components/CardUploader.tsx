@@ -1,34 +1,33 @@
-import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { v4 as uuidv4 } from 'uuid';
-import { UploadedImage, RecognizedCard } from '../types';
+import React, { useState } from 'react';
+import { useFileUploader, handleClearFiles } from '../utils/commonHooks';
 import { recognizeCardName } from '../services/googleVisionApi';
 import { getCardVersions } from '../services/scryfallApi';
 import { TrashIcon, Loader, AlertCircle } from 'lucide-react';
 
-interface CardUploaderProps {
-  onUpload: (recognizedCards: RecognizedCard[]) => void;
-  preSelectedSet?: string;
+interface UploadedFile {
+  id: string;
+  file: File;
+  name: string;
+  preview: string;
 }
 
-const CardUploader: React.FC<CardUploaderProps> = ({ onUpload, preSelectedSet }) => {
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+interface RecognizedCard {
+  name: string;
+  versions: any[]; // Replace 'any' with a more specific type if available
+  selectedVersion: any | null; // Replace 'any' with a more specific type if available
+  uploadedImage: UploadedFile;
+}
+
+const CardUploader: React.FC = () => {
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [recognizedCards, setRecognizedCards] = useState<RecognizedCard[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+  const onUpload = async (newImages: UploadedFile[]) => {
+    setUploadedFiles((prevFiles) => [...prevFiles, ...newImages]);
     setIsProcessing(true);
     setErrors([]);
-
-    const newImages: UploadedImage[] = acceptedFiles.map((file) => ({
-      id: uuidv4(),
-      file,
-      preview: URL.createObjectURL(file),
-      name: file.name,
-    }));
-
-    setUploadedImages((prevImages) => [...prevImages, ...newImages]);
 
     const newRecognizedCards: RecognizedCard[] = [];
     const newErrors: string[] = [];
@@ -55,26 +54,11 @@ const CardUploader: React.FC<CardUploaderProps> = ({ onUpload, preSelectedSet })
     }
 
     setRecognizedCards((prevCards) => [...prevCards, ...newRecognizedCards]);
-    onUpload([...recognizedCards, ...newRecognizedCards]);
     setErrors(newErrors);
     setIsProcessing(false);
-  }, [onUpload, recognizedCards]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png'],
-    },
-    multiple: true,
-  });
-
-  const handleClearFiles = () => {
-    setUploadedImages([]);
-    setRecognizedCards([]);
-    setErrors([]);
-    onUpload([]);
   };
+
+  const { getRootProps, getInputProps, isDragActive } = useFileUploader(onUpload);
 
   return (
     <div className="text-white">
@@ -92,7 +76,7 @@ const CardUploader: React.FC<CardUploaderProps> = ({ onUpload, preSelectedSet })
 
       <div className="flex justify-between mb-4">
         <button
-          onClick={handleClearFiles}
+          onClick={() => handleClearFiles(setUploadedFiles)}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
           Clear Files
@@ -132,11 +116,11 @@ const CardUploader: React.FC<CardUploaderProps> = ({ onUpload, preSelectedSet })
         </div>
       )}
 
-      {uploadedImages.length > 0 && (
+      {uploadedFiles.length > 0 && (
         <div className="mb-4">
           <h3 className="font-bold mb-2">Uploaded Files</h3>
           <div className="max-h-60 overflow-y-auto bg-gray-800 rounded p-2">
-            {uploadedImages.map((image) => (
+            {uploadedFiles.map((image) => (
               <div key={image.id} className="flex justify-between items-center py-2 border-b border-gray-700">
                 <div className="flex items-center">
                   <img src={image.preview} alt={image.name} className="w-16 h-16 object-cover mr-4 rounded" />
